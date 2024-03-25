@@ -1,2 +1,12 @@
 
+.idea/encodings.xml
+.idea/compiler.xml
+.idea/jarRepositories.xml
 .idea/misc.xml
+.idea/uiDesigner.xml
+.idea/vcs.xml
+.idea/workspace.xml
+target/classes/com/dev/comingsoon/ComingSoonApplication.class
+target/classes/application.properties
+target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
