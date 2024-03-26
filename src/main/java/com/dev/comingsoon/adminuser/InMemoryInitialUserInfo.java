@@ -17,26 +17,27 @@ public class InMemoryInitialUserInfo implements CommandLineRunner {
 
     private final IAdminUserRepository iAdminUserRepository;
     private final PasswordEncoder passwordEncoder;
+
     @Override
     public void run(String... args) throws Exception {
-        AdminUser manager = new AdminUser();
-        manager.setUserName("Manager");
-        manager.setPassword(passwordEncoder.encode("password"));
-        manager.setRoles("ROLE_MANAGER");
-        manager.setEmail("manager@manager.com");
+        createAndSaveUser("Manager", "manager@manager.com", "ROLE_MANAGER");
+        createAndSaveUser("Admin", "admin@admin.com", "ROLE_ADMIN");
+        createAndSaveUser("User", "user@user.com", "ROLE_USER");
+        createAndSaveUser("Host", "host@host.com", "ROLE_MASTER");
+    }
 
-        AdminUser admin = new AdminUser();
-        admin.setUserName("Admin");
-        admin.setPassword(passwordEncoder.encode("password"));
-        admin.setRoles("ROLE_ADMIN");
-        admin.setEmail("admin@admin.com");
+    private void createAndSaveUser(String username, String email, String roles) {
+        if (!userExists(email)) {
+            AdminUser user = new AdminUser();
+            user.setUserName(username);
+            user.setPassword(passwordEncoder.encode("password"));
+            user.setRoles(roles);
+            user.setEmail(email);
+            iAdminUserRepository.save(user);
+        }
+    }
 
-        AdminUser user = new AdminUser();
-        user.setUserName("User");
-        user.setPassword(passwordEncoder.encode("password"));
-        user.setRoles("ROLE_USER");
-        user.setEmail("user@user.com");
-
-        iAdminUserRepository.saveAll(List.of(manager,admin,user));
+    private boolean userExists(String email) {
+        return iAdminUserRepository.findByEmail(email).isPresent();
     }
 }
