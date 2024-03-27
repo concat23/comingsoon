@@ -1,6 +1,7 @@
 package com.dev.comingsoon.service;
 
 import com.dev.comingsoon.config.jwtauth.JwtTokenGenerator;
+import com.dev.comingsoon.dto.AdminUserLoginDTO;
 import com.dev.comingsoon.dto.AdminUserRegistrationDTO;
 import com.dev.comingsoon.dto.AuthResponseDTO;
 import com.dev.comingsoon.dto.TokenType;
@@ -14,9 +15,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -31,6 +34,9 @@ public class AuthService {
     private final JwtTokenGenerator jwtTokenGenerator;
     private final IRefreshTokenRepository iRefreshTokenRepository;
     private final AdminUserMapper adminUserMapper;
+    private final AuthenticationManager authenticationManager;
+
+
     public AuthResponseDTO getJwtTokensAfterAuthentication(Authentication authentication, HttpServletResponse response) {
         try
         {
@@ -160,4 +166,12 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,e.getMessage());
         }
     }
+    public Authentication authenticate(AdminUserLoginDTO adminUserLoginDTO) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(adminUserLoginDTO.getUsernameOrEmail(),adminUserLoginDTO.getPassword())
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        return authentication;
+    }
+
 }

@@ -1,8 +1,11 @@
 package com.dev.comingsoon.resource;
 
 
+import com.dev.comingsoon.dto.AdminUserLoginDTO;
 import com.dev.comingsoon.dto.AdminUserRegistrationDTO;
 import com.dev.comingsoon.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,20 +25,38 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/api/admin/auth")
+@Tag(name = "Auth Controller")
 public class AuthController {
     private final AuthService authService;
-    @PostMapping("/sign-in")
-    public ResponseEntity<?> authenticateUser(Authentication authentication, HttpServletResponse response){
 
-        return ResponseEntity.ok(authService.getJwtTokensAfterAuthentication(authentication,response));
+//    @Operation(summary = "Sign in")
+//    @PostMapping("/sign-in")
+//    public ResponseEntity<?> authenticateUser(Authentication authentication, HttpServletResponse response){
+//
+//        return ResponseEntity.ok(authService.getJwtTokensAfterAuthentication(authentication,response));
+//    }
+    @Operation(summary = "Sign in")
+    @PostMapping("/sign-in")
+    public ResponseEntity<?> authenticateUser(@RequestBody AdminUserLoginDTO adminUserLoginDTO, HttpServletResponse response){
+
+        Authentication authentication = authService.authenticate(adminUserLoginDTO);
+        if (authentication != null) {
+            // If authentication successful, return JWT tokens
+            return ResponseEntity.ok(authService.getJwtTokensAfterAuthentication(authentication, response));
+        } else {
+            // If authentication fails, return unauthorized response
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
     }
 
+    @Operation(summary = "Refesh token")
     @PreAuthorize("hasAuthority('SCOPE_REFRESH_TOKEN')")
     @PostMapping ("/refresh-token")
     public ResponseEntity<?> getAccessToken(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader){
         return ResponseEntity.ok(authService.getAccessTokenUsingRefreshToken(authorizationHeader));
     }
 
+    @Operation(summary = "Sign up")
     @PostMapping("/sign-up")
     public ResponseEntity<?> registerUser(@Valid @RequestBody AdminUserRegistrationDTO adminUserRegistrationDTO,
                                           BindingResult bindingResult, HttpServletResponse httpServletResponse){

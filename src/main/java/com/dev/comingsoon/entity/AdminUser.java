@@ -35,4 +35,5 @@ public class AdminUser {
 
     @OneToMany(mappedBy = "adminUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<RefreshToken> refreshTokens;
+    
 }

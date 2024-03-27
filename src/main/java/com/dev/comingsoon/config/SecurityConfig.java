@@ -2,9 +2,7 @@ package com.dev.comingsoon.config;
 
 
 import com.dev.comingsoon.adminuser.AdminUserManagerConfig;
-import com.dev.comingsoon.config.jwtauth.JwtAccessTokenFilter;
-import com.dev.comingsoon.config.jwtauth.JwtRefreshTokenFilter;
-import com.dev.comingsoon.config.jwtauth.JwtTokenUtils;
+import com.dev.comingsoon.config.jwtauth.*;
 import com.dev.comingsoon.repository.IRefreshTokenRepository;
 import com.dev.comingsoon.service.LogoutHandlerService;
 import com.nimbusds.jose.jwk.JWK;
@@ -20,12 +18,18 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -37,6 +41,8 @@ import org.springframework.security.oauth2.server.resource.web.access.BearerToke
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import java.util.Arrays;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -52,6 +58,11 @@ public class SecurityConfig {
     private final JwtTokenUtils jwtTokenUtils;
     private final IRefreshTokenRepository iRefreshTokenRepository;
     private final LogoutHandlerService logoutHandlerService;
+
+    private final UserDetailsService userDetailsService;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Order(1)
     @Bean
     public SecurityFilterChain signInSecurityFilterChain(HttpSecurity httpSecurity) throws Exception{
@@ -155,6 +166,56 @@ public class SecurityConfig {
                 .build();
     }
 
+    @Order(7)
+    @Bean
+    public SecurityFilterChain swaggerSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher(new AntPathRequestMatcher("/swagger-ui/**"))
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        return http.build();
+    }
+
+    @Order(0)
+    @Bean
+    public SecurityFilterChain securitySwaggerFilterChain(HttpSecurity http) throws Exception {
+        SecurityFilterChain securityFilterChain = http
+                .securityMatcher(new AntPathRequestMatcher("/api/admin/auth/**"))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests((authorize) -> {
+                    authorize.requestMatchers("/api/admin/auth/**").permitAll();
+                    authorize.requestMatchers("/api/admin/dashboard/**").permitAll();
+                    authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
+                    authorize.anyRequest().authenticated();
+                })
+                .httpBasic(Customizer.withDefaults())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+
+
+        if (securityFilterChain != null) {
+            System.out.println("Bean Security Swagger Filter Chain đã được đăng ký.");
+        } else {
+            System.out.println("Không thể tìm thấy bean Security Swagger Filter Chain.");
+        }
+
+        return securityFilterChain;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return new ProviderManager(Arrays.asList(authenticationProvider()));
+    }
+
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
