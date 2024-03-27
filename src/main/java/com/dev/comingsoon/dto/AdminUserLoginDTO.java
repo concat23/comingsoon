@@ -4,6 +4,12 @@ public class AdminUserLoginDTO {
     private String usernameOrEmail;
     private String password;
 
+
+    public AdminUserLoginDTO(String usernameOrEmail, String password) {
+        this.usernameOrEmail = usernameOrEmail;
+        this.password = password;
+    }
+
     public String getUsernameOrEmail() {
         return usernameOrEmail;
     }
